@@ -51,7 +51,7 @@ static int wpi_lcd (lua_State *L) {
   
   lua_settop(L,0);
   lcd_handle *l = lua_newuserdata(L,sizeof(lcd_handle));
-  luaL_getmetatable(L,"wiringPi.lcd");
+  luaL_getmetatable(L,"wpi.lcd");
   lua_setmetatable(L,-2);
   l->handle = handle;
   return 1;
