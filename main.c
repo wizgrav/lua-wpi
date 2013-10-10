@@ -1,10 +1,13 @@
-#include "lua.h"
-#include "lauxlib.h"
-#include <wiringPi.h>
-#include <lcd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include "lua.h"
+#include "lauxlib.h"
+#include <wiringPi.h>
+#include <wiringShift.h>
+#include <softPwm.h>
+#include <lcd.h>
+
 
 #define ARGCHECK(n)\
 	if(lua_gettop(L) != n){\
@@ -50,6 +53,7 @@ static int wpi_lcd (lua_State *L) {
   l->handle = handle;
   return 1;
 }
+
 static int wpi_mode (lua_State *L) {
 	if(lua_gettop(L) != 2) luaL_error(L,"Invalid number of arguments.");
 	int pin = (int) lua_tointeger(L,1);
@@ -57,6 +61,51 @@ static int wpi_mode (lua_State *L) {
 	pinMode (pin,mode);
 	return 0;
 }
+
+static int wpi_poff (lua_State *L) {
+	if(lua_gettop(L) != 1) luaL_error(L,"Invalid number of arguments.");
+	int pin = (int) lua_tointeger(L,1);
+	pullUpDnControl (pin,PUD_OFF);
+	return 0;
+}
+
+static int wpi_pdown (lua_State *L) {
+	if(lua_gettop(L) != 1) luaL_error(L,"Invalid number of arguments.");
+	int pin = (int) lua_tointeger(L,1);
+	pullUpDnControl (pin,PUD_DOWN);
+	return 0;
+}
+
+static int wpi_pup (lua_State *L) {
+	if(lua_gettop(L) != 1) luaL_error(L,"Invalid number of arguments.");
+	int pin = (int) lua_tointeger(L,1);
+	pullUpDnControl (pin,PUD_UP);
+	return 0;
+}
+
+static int wpi_pwm (lua_State *L) {
+	if(lua_gettop(L) != 1) luaL_error(L,"Invalid number of arguments.");
+	int pin = (int) lua_tointeger(L,1);
+	if(pin == 1){
+		pinMode(1,PWM_OUTPUT);
+	}else{
+		softPwmCreate(pin,10,100);
+	}
+	return 0;
+}
+
+static int wpi_fpwm (lua_State *L) {
+	if(lua_gettop(L) != 2) luaL_error(L,"Invalid number of arguments.");
+	int pin = (int) lua_tointeger(L,1);
+	int value = (int) lua_tointeger(L,2);
+	if(pin == 1){
+		pwmWrite(1,value);
+	}else{
+		softPwmWrite(pin,value);
+	}
+	return 0;
+}
+
 
 static int wpi_read (lua_State *L) {
 	if(lua_gettop(L) != 1) luaL_error(L,"Invalid number of arguments.");
@@ -71,6 +120,51 @@ static int wpi_write (lua_State *L) {
 	int pin = (int) lua_tointeger(L,1);
 	int value = (int) lua_toboolean(L,2);
 	digitalWrite(pin,value);
+	return 0;
+}
+
+static int wpi_millis (lua_State *L) {
+	if(lua_gettop(L)) luaL_error(L,"Invalid number of arguments.");
+	lua_pushnumber(L,(double) millis());
+	return 1;
+}
+
+static int wpi_micros (lua_State *L) {
+	if(lua_gettop(L)) luaL_error(L,"Invalid number of arguments.");
+	lua_pushnumber(L,(double) micros());
+	return 1;
+}
+
+static int wpi_delay (lua_State *L) {
+	if(lua_gettop(L) != 1) luaL_error(L,"Invalid number of arguments.");
+	unsigned int value = (unsigned int) lua_tonumber(L,1);
+	delay(value);
+	return 0;
+}
+
+static int wpi_microdelay (lua_State *L) {
+	if(lua_gettop(L) != 1) luaL_error(L,"Invalid number of arguments.");
+	unsigned int value = (unsigned int) lua_tonumber(L,1);
+	delayMicroseconds(value);
+	return 0;
+}
+
+static int wpi_shiftin (lua_State *L) {
+	if(lua_gettop(L) != 3) luaL_error(L,"Invalid number of arguments.");
+	unsigned char pin = (unsigned char) lua_tointeger(L,1);
+	unsigned char cpin = (unsigned char) lua_tointeger(L,2);
+	unsigned char order = (unsigned char)( lua_toboolean(L,3)? LSBFIRST:MSBFIRST);
+	lua_pushinteger(L,(lua_Integer) shiftIn(pin,cpin,order));
+	return 1;
+}
+
+static int wpi_shiftout (lua_State *L) {
+	if(lua_gettop(L) != 4) luaL_error(L,"Invalid number of arguments.");
+	unsigned char pin = (unsigned char) lua_tointeger(L,1);
+	unsigned char cpin = (unsigned char) lua_tointeger(L,2);
+	unsigned char order = (unsigned char)( lua_toboolean(L,3)? LSBFIRST:MSBFIRST);
+	unsigned char value = (unsigned char) lua_tointeger(L,4);
+	shiftOut(pin,cpin,order,value);
 	return 0;
 }
 
@@ -142,9 +236,19 @@ static int lcd_def (lua_State *L) {
 static const luaL_reg wpilib[] = {
 {"lcd",   wpi_lcd},
 {"mode",   wpi_mode},
+{"pwm",   wpi_pwm},
+{"fpwm",   wpi_fpwm},
+{"poff",   wpi_poff},
+{"pdown",   wpi_pdown},
+{"pup",   wpi_pup},
 {"read",   wpi_read},
 {"write",   wpi_write},
-
+{"millis",   wpi_millis},
+{"micros",   wpi_micros},
+{"delay",   wpi_delay},
+{"microdelay",   wpi_microdelay},
+{"shiftin",   wpi_shiftin},
+{"shiftout",   wpi_shiftout},
 {NULL, NULL}
 };
 
