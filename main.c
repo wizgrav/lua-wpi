@@ -21,26 +21,29 @@ typedef struct lcd_handle{
 }lcd_handle;
 
 static int wpi_lcd (lua_State *L) {
-  if(lua_gettop(L) != 13){
+	int n = lua_gettop(L);
+  if(n != 12 && n != 8){
 	  luaL_error(L,"Incorrect number of arguments.");
   }
-  int rows, cols,  bits, rs,  strb, d0,  d1,  d2,  d3,  d4, d5,  d6,  d7;
+  int rows, cols,  handle, rs,  strb, d0,  d1,  d2,  d3,  d4, d5,  d6,  d7;
   
   rows = (int) lua_tointeger(L,1);
   cols = (int) lua_tointeger(L,2);
-  bits = (int) lua_tointeger(L,3);
-  rs = (int) lua_tointeger(L,4);
-  strb = (int) lua_tointeger(L,5);
-  d0 = (int) lua_tointeger(L,6);
-  d1 = (int) lua_tointeger(L,7);
-  d2 = (int) lua_tointeger(L,8);
-  d3 = (int) lua_tointeger(L,9);
-  d4 = (int) lua_tointeger(L,10);
-  d5 = (int) lua_tointeger(L,11);
-  d6 = (int) lua_tointeger(L,12);
-  d7 = (int) lua_tointeger(L,13);
-  
-  int handle = lcdInit ( rows,  cols,  bits, rs,  strb, d0,  d1,  d2,  d3,  d4, d5,  d6,  d7) ;
+  rs = (int) lua_tointeger(L,3);
+  strb = (int) lua_tointeger(L,4);
+  d0 = (int) lua_tointeger(L,5);
+  d1 = (int) lua_tointeger(L,6);
+  d2 = (int) lua_tointeger(L,7);
+  d3 = (int) lua_tointeger(L,8);
+  if(n==12){
+	d4 = (int) lua_tointeger(L,9);
+	d5 = (int) lua_tointeger(L,10);
+	d6 = (int) lua_tointeger(L,11);
+	d7 = (int) lua_tointeger(L,12);
+	handle = lcdInit ( rows,  cols,  8, rs,  strb, d0,  d1,  d2,  d3,  d4, d5,  d6,  d7) ;
+  }else{
+	handle = lcdInit ( rows,  cols,  4, rs,  strb, d0,  d1,  d2,  d3,  0, 0,  0,  0) ;	  
+  }
   
   if(handle < 0){
 	luaL_error(L,"Error initializing lcd.");
